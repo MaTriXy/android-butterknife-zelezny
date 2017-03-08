@@ -1,6 +1,7 @@
 package com.avast.android.butterknifezelezny.form;
 
 
+import com.avast.android.butterknifezelezny.iface.OnCheckBoxStateChangedListener;
 import com.avast.android.butterknifezelezny.model.Element;
 
 import javax.swing.*;
@@ -16,13 +17,23 @@ public class Entry extends JPanel {
     protected EntryList mParent;
     protected Element mElement;
     protected ArrayList<String> mGeneratedIDs;
+    protected OnCheckBoxStateChangedListener mListener;
     // ui
     protected JCheckBox mCheck;
     protected JLabel mType;
     protected JLabel mID;
+    protected JCheckBox mEvent;
     protected JTextField mName;
     protected Color mNameDefaultColor;
     protected Color mNameErrorColor = new Color(0x880000);
+
+    public JCheckBox getCheck() {
+        return mCheck;
+    }
+
+    public void setListener(final OnCheckBoxStateChangedListener onStateChangedListener) {
+        this.mListener = onStateChangedListener;
+    }
 
     public Entry(EntryList parent, Element element, ArrayList<String> ids) {
         mElement = element;
@@ -38,15 +49,18 @@ public class Entry extends JPanel {
         }
         mCheck.addChangeListener(new CheckListener());
 
+        mEvent = new JCheckBox();
+        mEvent.setPreferredSize(new Dimension(100, 26));
+
         mType = new JLabel(mElement.name);
         mType.setPreferredSize(new Dimension(100, 26));
 
         mID = new JLabel(mElement.id);
-        mID.setPreferredSize(new Dimension(160, 26));
+        mID.setPreferredSize(new Dimension(100, 26));
 
         mName = new JTextField(mElement.fieldName, 10);
         mNameDefaultColor = mName.getBackground();
-        mName.setPreferredSize(new Dimension(260, 26));
+        mName.setPreferredSize(new Dimension(100, 26));
         mName.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -67,6 +81,8 @@ public class Entry extends JPanel {
         add(Box.createRigidArea(new Dimension(10, 0)));
         add(mID);
         add(Box.createRigidArea(new Dimension(10, 0)));
+        add(mEvent);
+        add(Box.createRigidArea(new Dimension(10, 0)));
         add(mName);
         add(Box.createHorizontalGlue());
 
@@ -75,6 +91,7 @@ public class Entry extends JPanel {
 
     public Element syncElement() {
         mElement.used = mCheck.isSelected();
+        mElement.isClick = mEvent.isSelected();
         mElement.fieldName = mName.getText();
 
         if (mElement.checkValidity()) {
@@ -96,6 +113,10 @@ public class Entry extends JPanel {
             mID.setEnabled(false);
             mName.setEnabled(false);
         }
+
+        if (mListener != null) {
+            mListener.changeState(mCheck.isSelected());
+        }
     }
 
     // classes
@@ -107,4 +128,5 @@ public class Entry extends JPanel {
             checkState();
         }
     }
+
 }

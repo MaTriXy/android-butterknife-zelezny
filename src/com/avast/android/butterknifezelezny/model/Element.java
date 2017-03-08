@@ -1,5 +1,6 @@
 package com.avast.android.butterknifezelezny.model;
 
+
 import com.avast.android.butterknifezelezny.common.Utils;
 
 import java.util.regex.Matcher;
@@ -17,26 +18,16 @@ public class Element {
     public String fieldName; // name of variable
     public boolean isValid = false;
     public boolean used = true;
+    public boolean isClick = true;
 
-    /**
-     * Constructs new element
-     *
-     * @param name Class name of the view
-     * @param id Value in android:id attribute
-     * @throws IllegalArgumentException When the arguments are invalid
-     */
     public Element(String name, String id) {
         // id
         final Matcher matcher = sIdPattern.matcher(id);
-        if (matcher.find() && matcher.groupCount() > 1) {
+        if (matcher.find() && matcher.groupCount() > 0) {
             this.id = matcher.group(2);
 
             String androidNS = matcher.group(1);
             this.isAndroidNS = !(androidNS == null || androidNS.length() == 0);
-        }
-
-        if (this.id == null) {
-            throw new IllegalArgumentException("Invalid format of view id");
         }
 
         // name
@@ -84,10 +75,6 @@ public class Element {
         sb.append(Utils.getPrefix());
 
         for (int i = 0; i < words.length; i++) {
-            if (words[i].isEmpty()) {
-                // fixing issues with double underscores - see issue #40
-                continue;
-            }
             String[] idTokens = words[i].split("\\.");
             char[] chars = idTokens[idTokens.length - 1].toCharArray();
             if (i > 0 || !Utils.isEmptyString(Utils.getPrefix())) {

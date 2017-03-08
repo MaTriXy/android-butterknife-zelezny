@@ -8,12 +8,13 @@ import java.util.regex.Pattern;
  */
 public abstract class AbstractButterKnife implements IButterKnife {
 
-    private final Pattern mFieldAnnotationPattern = Pattern.compile("^@" + getFieldAnnotationSimpleName() + "\\(([^\\)]+)\\)$", Pattern.CASE_INSENSITIVE);
     private static final String mPackageName = "butterknife";
+    private final Pattern mFieldAnnotationPattern = Pattern.compile("^@" + getFieldAnnotationSimpleName() + "\\(([^\\)]+)\\)$", Pattern.CASE_INSENSITIVE);
     private final String mFieldAnnotationCanonicalName = getPackageName() + "." + getFieldAnnotationSimpleName();
     private final String mCanonicalBindStatement = getPackageName() + "." + getSimpleBindStatement();
     private final String mCanonicalUnbindStatement = getPackageName() + "." + getSimpleUnbindStatement();
     private final String mOnClickCanonicalName = getPackageName() + ".OnClick";
+    private final String mUnbinderClassCanonicalName = getPackageName() + "." + getUnbinderClassSimpleName();
 
 
     @Override
@@ -42,7 +43,23 @@ public abstract class AbstractButterKnife implements IButterKnife {
     }
 
     @Override
+    public boolean isUnbindSupported() {
+        return true;
+    }
+
+    @Override
+    public boolean isUsingUnbinder() {
+        // Let's assume that this is going to stay after ButterKnife 8.
+        return true;
+    }
+
+    @Override
     public String getCanonicalUnbindStatement() {
         return mCanonicalUnbindStatement;
+    }
+
+    @Override
+    public String getUnbinderClassCanonicalName() {
+        return mUnbinderClassCanonicalName;
     }
 }

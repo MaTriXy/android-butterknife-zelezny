@@ -12,6 +12,7 @@ import com.intellij.codeInsight.CodeInsightActionHandler;
 import com.intellij.codeInsight.generation.actions.BaseGenerateAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 public class InjectAction extends BaseGenerateAction implements IConfirmListener, ICancelListener {
 
     protected JFrame mDialog;
+    protected static final Logger log = Logger.getInstance(InjectAction.class);
 
     @SuppressWarnings("unused")
     public InjectAction() {
@@ -66,6 +68,8 @@ public class InjectAction extends BaseGenerateAction implements IConfirmListener
             return; // no layout found
         }
 
+        log.info("Layout file: " + layout.getVirtualFile());
+
         ArrayList<Element> elements = Utils.getIDsFromLayout(layout);
         if (!elements.isEmpty()) {
             showDialog(project, editor, elements);
@@ -74,7 +78,7 @@ public class InjectAction extends BaseGenerateAction implements IConfirmListener
         }
     }
 
-    public void onConfirm(Project project, Editor editor, ArrayList<Element> elements, String fieldNamePrefix, boolean createHolder) {
+    public void onConfirm(Project project, Editor editor, ArrayList<Element> elements, String fieldNamePrefix, boolean createHolder, boolean splitOnclickMethods) {
         PsiFile file = PsiUtilBase.getPsiFileInEditor(editor, project);
         if (file == null) {
             return;
@@ -83,28 +87,13 @@ public class InjectAction extends BaseGenerateAction implements IConfirmListener
 
         closeDialog();
 
-        // count selected elements
-        int cnt = 0;
-        for (Element element : elements) {
-            if (element.used) {
-                cnt++;
-            }
-        }
 
-        if (cnt > 0) { // generate injections
-            if (layout == null) {
-                return;
-            }
-            new InjectWriter(file, getTargetClass(editor, file), "Generate Injections", elements, layout.getName(), fieldNamePrefix, createHolder).execute();
-
-            if (cnt == 1) {
-                Utils.showInfoNotification(project, "One injection added to " + file.getName());
-            } else {
-                Utils.showInfoNotification(project, String.valueOf(cnt) + " injections added to " + file.getName());
-            }
+        if (Utils.getInjectCount(elements) > 0 || Utils.getClickCount(elements) > 0) { // generate injections
+            new InjectWriter(file, getTargetClass(editor, file), "Generate Injections", elements, layout.getName(), fieldNamePrefix, createHolder, splitOnclickMethods).execute();
         } else { // just notify user about no element selected
             Utils.showInfoNotification(project, "No injection was selected");
         }
+
     }
 
     public void onCancel() {

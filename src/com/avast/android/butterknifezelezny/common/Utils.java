@@ -4,6 +4,7 @@ import com.avast.android.butterknifezelezny.Settings;
 import com.avast.android.butterknifezelezny.butterknife.IButterKnife;
 import com.avast.android.butterknifezelezny.model.Element;
 import com.intellij.ide.util.PropertiesComponent;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtil;
@@ -25,11 +26,15 @@ import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.ui.awt.RelativePoint;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.regex.Matcher;
 
 public class Utils {
+
+    private static final Logger log = Logger.getInstance(Utils.class);
 
     /**
      * Is using Android SDK?
@@ -73,6 +78,7 @@ public class Utils {
      * @return
      */
     public static PsiFile findLayoutResource(PsiElement element) {
+        log.info("Finding layout resource for element: " + element.getText());
         if (element == null) {
             return null; // nothing to be used
         }
@@ -91,8 +97,6 @@ public class Utils {
         Project project = element.getProject();
         String name = String.format("%s.xml", element.getText());
         return resolveLayoutResourceFile(element, project, name);
-
-
     }
 
     private static PsiFile resolveLayoutResourceFile(PsiElement element, Project project, String name) {
@@ -100,8 +104,14 @@ public class Utils {
         Module module = ModuleUtil.findModuleForPsiElement(element);
         PsiFile[] files = null;
         if (module != null) {
-            GlobalSearchScope moduleScope = module.getModuleWithDependenciesAndLibrariesScope(false);
+            // first omit libraries, it might cause issues like (#103)
+            GlobalSearchScope moduleScope = module.getModuleWithDependenciesScope();
             files = FilenameIndex.getFilesByName(project, name, moduleScope);
+            if (files == null || files.length <= 0) {
+                // now let's do a fallback including the libraries
+                moduleScope = module.getModuleWithDependenciesAndLibrariesScope(false);
+                files = FilenameIndex.getFilesByName(project, name, moduleScope);
+            }
         }
         if (files == null || files.length <= 0) {
             // fallback to search through the whole project
@@ -114,6 +124,9 @@ public class Utils {
 
         // TODO - we have a problem here - we still can have multiple layouts (some coming from a dependency)
         // we need to resolve R class properly and find the proper layout for the R class
+        for (PsiFile file : files) {
+            log.info("Resolved layout resource file for name [" + name + "]: " + file.getVirtualFile());
+        }
         return files[0];
     }
 
@@ -300,6 +313,27 @@ public class Utils {
         return id;
     }
 
+
+    public static int getInjectCount(ArrayList<Element> elements) {
+        int cnt = 0;
+        for (Element element : elements) {
+            if (element.used) {
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+
+    public static int getClickCount(ArrayList<Element> elements) {
+        int cnt = 0;
+        for (Element element : elements) {
+            if (element.isClick) {
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+
     /**
      * Easier way to check if string is empty
      *
@@ -313,9 +347,9 @@ public class Utils {
     /**
      * Check whether classpath of a module that corresponds to a {@link PsiElement} contains given class.
      *
-     * @param project Project
+     * @param project    Project
      * @param psiElement Element for which we check the class
-     * @param className Class name of the searched class
+     * @param className  Class name of the searched class
      * @return True if the class is present on the classpath
      * @since 1.3
      */
@@ -328,18 +362,33 @@ public class Utils {
         PsiClass classInModule = JavaPsiFacade.getInstance(project).findClass(className, moduleScope);
         return classInModule != null;
     }
+
     /**
      * Check whether classpath of a the whole project contains given class.
      * This is only fallback for wrongly setup projects.
      *
-     * @param project Project
+     * @param project   Project
      * @param className Class name of the searched class
      * @return True if the class is present on the classpath
      * @since 1.3.1
      */
     public static boolean isClassAvailableForProject(@NotNull Project project, @NotNull String className) {
         PsiClass classInModule = JavaPsiFacade.getInstance(project).findClass(className,
-            new EverythingGlobalScope(project));
+                new EverythingGlobalScope(project));
         return classInModule != null;
+    }
+
+    /**
+     * Capitalizes a String changing the first character to upper case. No other characters are changed.
+
+     * @param src the String to capitalize, may be null
+     * @return the capitalized String, {@code null} if src is null
+     * @since 1.6.0
+     */
+    public static String capitalize(@Nullable String src) {
+        if (src == null) {
+            return src;
+        }
+        return src.substring(0, 1).toUpperCase(Locale.US) + src.substring(1);
     }
 }

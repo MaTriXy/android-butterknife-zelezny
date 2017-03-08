@@ -2,11 +2,7 @@ package com.avast.android.butterknifezelezny.butterknife;
 
 import com.avast.android.butterknifezelezny.common.Utils;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.JavaPsiFacade;
-import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.search.EverythingGlobalScope;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,9 +18,10 @@ public class ButterKnifeFactory {
      * List of supported ButterKnifes.
      * Note: The ordering corresponds to the preferred ButterKnife versions.
      */
-    private static IButterKnife[] sSupportedButterKnives = new IButterKnife[] {
+    private static IButterKnife[] sSupportedButterKnives = new IButterKnife[]{
             new ButterKnife7(),
-            new ButterKnife6()
+            new ButterKnife6(),
+            new ButterKnife8()
     };
 
     private ButterKnifeFactory() {
@@ -35,7 +32,7 @@ public class ButterKnifeFactory {
      * Find ButterKnife that is available for given {@link PsiElement} in the {@link Project}.
      * Note that it check if ButterKnife is available in the module.
      *
-     * @param project Project
+     * @param project    Project
      * @param psiElement Element for which we are searching for ButterKnife
      * @return ButterKnife
      */

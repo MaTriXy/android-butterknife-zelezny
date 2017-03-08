@@ -1,20 +1,21 @@
 package com.avast.android.butterknifezelezny.butterknife;
 
 /**
- * ButterKnife version 7
+ * ButterKnife version 8
  *
  * @author Tomáš Kypta
- * @since 1.3
+ * @since 1.5.0
  */
-public class ButterKnife7 extends AbstractButterKnife {
+public class ButterKnife8 extends AbstractButterKnife {
 
-    private static final String mFieldAnnotationSimpleName = "Bind";
+    private static final String mFieldAnnotationSimpleName = "BindView";
     private static final String mSimpleBindStatement = "ButterKnife.bind";
-    private static final String mSimpleUnbindStatement = "ButterKnife.unbind";
+    private static final String mSimpleUnbindStatement = ".unbind";
+    private static final String mUnbinderClassSimpleName = "Unbinder";
 
     @Override
     public String getVersion() {
-        return "7.0.1";
+        return "8.0.1";
     }
 
     @Override
@@ -38,12 +39,12 @@ public class ButterKnife7 extends AbstractButterKnife {
     }
 
     @Override
-    public boolean isUsingUnbinder() {
-        return false;
+    public String getCanonicalUnbindStatement() {
+        return getSimpleUnbindStatement();
     }
 
     @Override
     public String getUnbinderClassSimpleName() {
-        return null;
+        return mUnbinderClassSimpleName;
     }
 }

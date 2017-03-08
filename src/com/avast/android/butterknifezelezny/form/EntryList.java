@@ -2,6 +2,7 @@ package com.avast.android.butterknifezelezny.form;
 
 import com.avast.android.butterknifezelezny.iface.ICancelListener;
 import com.avast.android.butterknifezelezny.iface.IConfirmListener;
+import com.avast.android.butterknifezelezny.iface.OnCheckBoxStateChangedListener;
 import com.avast.android.butterknifezelezny.model.Element;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -29,9 +30,36 @@ public class EntryList extends JPanel {
     protected JTextField mPrefixValue;
     protected JLabel mPrefixLabel;
     protected JCheckBox mHolderCheck;
+    protected JCheckBox msplitOnclickMethodsCheck;
     protected JLabel mHolderLabel;
     protected JButton mConfirm;
     protected JButton mCancel;
+    protected EntryHeader mEntryHeader;
+
+    private OnCheckBoxStateChangedListener allCheckListener = new OnCheckBoxStateChangedListener() {
+        @Override
+        public void changeState(boolean checked) {
+            for (final Entry entry : mEntries) {
+                entry.setListener(null);
+                entry.getCheck().setSelected(checked);
+                entry.setListener(singleCheckListener);
+            }
+        }
+    };
+
+    private OnCheckBoxStateChangedListener singleCheckListener = new OnCheckBoxStateChangedListener() {
+        @Override
+        public void changeState(boolean checked) {
+            boolean result = true;
+            for (Entry entry : mEntries) {
+                result &= entry.getCheck().isSelected();
+            }
+
+            mEntryHeader.setAllListener(null);
+            mEntryHeader.getAllCheck().setSelected(result);
+            mEntryHeader.setAllListener(allCheckListener);
+        }
+    };
 
     public EntryList(Project project, Editor editor, ArrayList<Element> elements, ArrayList<String> ids, boolean createHolder, IConfirmListener confirmListener, ICancelListener cancelListener) {
         mProject = project;
@@ -57,7 +85,8 @@ public class EntryList extends JPanel {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.PAGE_AXIS));
         contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        contentPanel.add(new EntryHeader());
+        mEntryHeader = new EntryHeader();
+        contentPanel.add(mEntryHeader);
         contentPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
         JPanel injectionsPanel = new JPanel();
@@ -65,8 +94,10 @@ public class EntryList extends JPanel {
         injectionsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
         int cnt = 0;
+        boolean selectAllCheck = true;
         for (Element element : mElements) {
             Entry entry = new Entry(this, element, mGeneratedIDs);
+            entry.setListener(singleCheckListener);
 
             if (cnt > 0) {
                 injectionsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -75,7 +106,11 @@ public class EntryList extends JPanel {
             cnt++;
 
             mEntries.add(entry);
+
+            selectAllCheck &= entry.getCheck().isSelected();
         }
+        mEntryHeader.getAllCheck().setSelected(selectAllCheck);
+        mEntryHeader.setAllListener(allCheckListener);
         injectionsPanel.add(Box.createVerticalGlue());
         injectionsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
@@ -116,17 +151,28 @@ public class EntryList extends JPanel {
         mHolderLabel = new JLabel();
         mHolderLabel.setText("Create ViewHolder");
 
-        JLabel settingsInfo = new JLabel();
-        settingsInfo.setText("(You can configure this plugin in Preferences)");
-
         JPanel holderPanel = new JPanel();
         holderPanel.setLayout(new BoxLayout(holderPanel, BoxLayout.LINE_AXIS));
         holderPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
         holderPanel.add(mHolderCheck);
         holderPanel.add(mHolderLabel);
         holderPanel.add(Box.createHorizontalGlue());
-        holderPanel.add(settingsInfo);
         add(holderPanel, BorderLayout.PAGE_END);
+
+        msplitOnclickMethodsCheck = new JCheckBox();
+        msplitOnclickMethodsCheck.setPreferredSize(new Dimension(32, 26));
+        msplitOnclickMethodsCheck.setSelected(false);
+
+        final JLabel independentOnclickMethodsLabel = new JLabel();
+        independentOnclickMethodsLabel.setText("Split OnClick methods");
+
+        final JPanel splitOnclickMethodsPanel = new JPanel();
+        splitOnclickMethodsPanel.setLayout(new BoxLayout(splitOnclickMethodsPanel, BoxLayout.LINE_AXIS));
+        splitOnclickMethodsPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+        splitOnclickMethodsPanel.add(msplitOnclickMethodsCheck);
+        splitOnclickMethodsPanel.add(independentOnclickMethodsLabel);
+        splitOnclickMethodsPanel.add(Box.createHorizontalGlue());
+        add(splitOnclickMethodsPanel, BorderLayout.PAGE_END);
 
         mCancel = new JButton();
         mCancel.setAction(new CancelAction());
@@ -210,7 +256,7 @@ public class EntryList extends JPanel {
 
             if (valid) {
                 if (mConfirmListener != null) {
-                    mConfirmListener.onConfirm(mProject, mEditor, mElements, mPrefix, mCreateHolder);
+                    mConfirmListener.onConfirm(mProject, mEditor, mElements, mPrefix, mCreateHolder, msplitOnclickMethodsCheck.isSelected());
                 }
             }
         }
